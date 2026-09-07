@@ -3,16 +3,14 @@ AI Text Humanizer - Flask Backend
 """
 
 import os
-import requests
 from flask import Flask, render_template, request, jsonify
+from google import genai
 
 app = Flask(__name__)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.5-flash:generateContent"
-)
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+MODEL_NAME = "gemini-2.5-flash"
 
 DAILY_WORD_LIMIT = 1500
 
@@ -55,31 +53,19 @@ def humanize():
             "error": f"Free limit {DAILY_WORD_LIMIT} words hai. Aapka text {word_count} words ka hai."
         }), 400
 
-    if not GEMINI_API_KEY:
+    if not client:
         return jsonify({"error": "Server par GEMINI_API_KEY set nahi hai."}), 500
 
-    payload = {
-        "contents": [
-            {"parts": [{"text": HUMANIZE_PROMPT.format(text=text)}]}
-        ]
-    }
-
     try:
-        resp = requests.post(
-            GEMINI_URL,
-            headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-            json=payload,
-            timeout=30,
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=HUMANIZE_PROMPT.format(text=text),
         )
-        resp.raise_for_status()
-        result = resp.json()
-        output = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        output = response.text.strip()
         return jsonify({"result": output})
-    except requests.exceptions.RequestException:
+    except Exception:
         app.logger.exception("Gemini API request failed")
         return jsonify({"error": "AI service se connect nahi ho saka. Thodi dair baad try karein."}), 502
-    except (KeyError, IndexError):
-        return jsonify({"error": "Unexpected response from AI service."}), 502
 
 
 if __name__ == "__main__":
