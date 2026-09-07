@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- SEO basics: title/description update karo apni final niche/brand ke hisab se -->
+<title>Free AI Text Humanizer - Make AI Text Sound Human</title>
+<meta name="description" content="Free online AI text humanizer. Paste your AI-generated text and instantly rewrite it to sound natural and human-written. No signup required.">
+<meta name="keywords" content="AI text humanizer, humanize AI text, bypass AI detector, paraphrase AI text free">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph tags (social sharing ke liye) -->
+<meta property="og:title" content="Free AI Text Humanizer">
+<meta property="og:description" content="Rewrite AI-generated text to sound naturally human — free and instant.">
+<meta property="og:type" content="website">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<!--
+  ADSTERRA AD CODE YAHAN PASTE KARO
+  Adsterra dashboard se "Get Code" karke jo <script> tag milega,
+  usko yahan (head ke andar) ya body ke jahan chaho waha paste kar dena.
+  Example placeholder:
+  <script type="text/javascript" src="//your-adsterra-script-url.js"></script>
+-->
+
+</head>
+<body>
+
+<header>
+  <h1>Free AI Text Humanizer</h1>
+  <p class="subtitle">AI-generated text ko natural, human-sounding banayein — free, bina signup ke.</p>
+</header>
+
+<main>
+  <div class="container">
+    <textarea id="inputText" placeholder="Apna AI-generated text yahan paste karein..." maxlength="8000"></textarea>
+
+    <div class="controls">
+      <span id="wordCount">0 words</span>
+      <button id="humanizeBtn">Humanize Text</button>
+    </div>
+
+    <div id="errorBox" class="error" style="display:none;"></div>
+
+    <div id="outputBox" class="output" style="display:none;">
+      <h3>Result:</h3>
+      <textarea id="outputText" readonly></textarea>
+      <button id="copyBtn">Copy Result</button>
+    </div>
+  </div>
+
+  <!-- Ad slot placeholder - Adsterra native/banner code yahan bhi laga sakte ho -->
+  <div class="ad-slot" id="adSlotBottom"></div>
+
+  <section class="info">
+    <h2>Ye Tool Kya Karta Hai?</h2>
+    <p>Ye free tool AI-generated text ko rewrite karke natural, human-like sentence structure deta hai — bina original meaning change kiye.</p>
+  </section>
+</main>
+
+<footer>
+  <p>&copy; 2026 AI Text Humanizer. All rights reserved.</p>
+</footer>
+
+<script>
+const inputText = document.getElementById('inputText');
+const wordCount = document.getElementById('wordCount');
+const humanizeBtn = document.getElementById('humanizeBtn');
+const outputBox = document.getElementById('outputBox');
+const outputText = document.getElementById('outputText');
+const errorBox = document.getElementById('errorBox');
+const copyBtn = document.getElementById('copyBtn');
+
+inputText.addEventListener('input', () => {
+  const words = inputText.value.trim().split(/\s+/).filter(Boolean).length;
+  wordCount.textContent = `${words} words`;
+});
+
+humanizeBtn.addEventListener('click', async () => {
+  const text = inputText.value.trim();
+  errorBox.style.display = 'none';
+  outputBox.style.display = 'none';
+
+  if (!text) {
+    errorBox.textContent = 'Pehle kuch text paste karein.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  humanizeBtn.disabled = true;
+  humanizeBtn.textContent = 'Processing...';
+
+  try {
+    const res = await fetch('/api/humanize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorBox.textContent = data.error || 'Kuch ghalat ho gaya.';
+      errorBox.style.display = 'block';
+    } else {
+      outputText.value = data.result;
+      outputBox.style.display = 'block';
+    }
+  } catch (err) {
+    errorBox.textContent = 'Server se connect nahi ho saka.';
+    errorBox.style.display = 'block';
+  } finally {
+    humanizeBtn.disabled = false;
+    humanizeBtn.textContent = 'Humanize Text';
+  }
+});
+
+copyBtn.addEventListener('click', () => {
+  outputText.select();
+  document.execCommand('copy');
+  copyBtn.textContent = 'Copied!';
+  setTimeout(() => copyBtn.textContent = 'Copy Result', 1500);
+});
+</script>
+
+</body>
+</html>
