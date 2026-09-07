@@ -1,21 +1,5 @@
 """
 AI Text Humanizer - Flask Backend
-----------------------------------
-Simple tool: user text paste karta hai, Gemini API use karke usko
-"human-like" rewrite karta hai (AI patterns kam karke).
-
-SETUP:
-    pip install -r requirements.txt
-
-    Gemini API key free mein yahan se lo:
-    https://aistudio.google.com/app/apikey
-
-    Phir terminal mein set karo (ya .env file banao):
-    export GEMINI_API_KEY="your_key_here"
-
-RUN LOCALLY:
-    python app.py
-    -> http://127.0.0.1:5000 pe open hoga
 """
 
 import os
@@ -27,11 +11,9 @@ app = Flask(__name__)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.0-flash:generateContent?key={key}"
+    "gemini-2.5-flash:generateContent"
 )
 
-# Free-tier daily word limit per visitor (session-based, simple version).
-# Production mein isko IP/DB based rate limiting se replace karna behtar hoga.
 DAILY_WORD_LIMIT = 1500
 
 HUMANIZE_PROMPT = """You are a text humanizer. Rewrite the following text so it reads
@@ -84,7 +66,8 @@ def humanize():
 
     try:
         resp = requests.post(
-            GEMINI_URL.format(key=GEMINI_API_KEY),
+            GEMINI_URL,
+            headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
             json=payload,
             timeout=30,
         )
@@ -92,8 +75,9 @@ def humanize():
         result = resp.json()
         output = result["candidates"][0]["content"]["parts"][0]["text"].strip()
         return jsonify({"result": output})
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"API error: {str(e)}"}), 502
+    except requests.exceptions.RequestException:
+        app.logger.exception("Gemini API request failed")
+        return jsonify({"error": "AI service se connect nahi ho saka. Thodi dair baad try karein."}), 502
     except (KeyError, IndexError):
         return jsonify({"error": "Unexpected response from AI service."}), 502
 
